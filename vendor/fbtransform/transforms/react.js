@@ -16,7 +16,7 @@
 /*global exports:true*/
 "use strict";
 
-var Syntax = require('esprima').Syntax;
+var Syntax = require('esprima-fb').Syntax;
 
 var catchup = require('../lib/utils').catchup;
 var append = require('../lib/utils').append;
