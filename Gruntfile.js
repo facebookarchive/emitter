@@ -53,7 +53,7 @@ module.exports = function(grunt) {
     'browserify:test'
   ]);
 
-  grunt.registerTask('test', ['build:test', 'phantom:run']);
+  grunt.registerTask('test', ['build:test']);
 
   // Optimized build task that does all of our builds. The subtasks will be run
   // in order so we can take advantage of that and only run jsx:debug once.

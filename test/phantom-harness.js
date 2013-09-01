@@ -4,13 +4,13 @@ var argv = slice.call(require("system").args);
 // Hard to believe PhantomJS has no equivalent of Node's "path" module.
 var fs = require("fs");
 var splat = [fs.workingDirectory, argv[0]]
-  .join(fs.separator)
-  .split(fs.separator);
+    .join(fs.separator)
+    .split(fs.separator);
 
 var harness = splat.pop();
 if (harness !== "phantom-harness.js") {
-  console.error("wrong harness: " + harness);
-  phantom.exit(-1);
+    console.error("wrong harness: " + harness);
+    phantom.exit(-1);
 }
 
 var cwd = splat.join(fs.separator);
@@ -19,49 +19,72 @@ fs.changeWorkingDirectory(cwd);
 // Hard to believe PhantomJS has no option parsing module.
 var port = 8080;
 var debug = false;
-var lastArg;
+var tests = [];
+var rest = [];
 while (argv.length > 0) {
-  var arg = argv.pop();
-  if (arg === "--port") {
-    port = +lastArg;
-  } else if (arg === "--debug") {
-    debug = true;
-  }
-  lastArg = arg;
+    var arg = argv.pop();
+    if (arg === "--port") {
+	port = +rest.pop();
+    } else if (arg === "--debug") {
+	debug = true;
+    } else if (arg === "--tests") {
+	while (rest.length > 0)
+	    tests.push(rest.pop());
+    }
+    rest.push(arg);
 }
+
+// Dynamically enable the individual tests.
+var indexHtml = fs.read("index.html").replace(
+	/^(\s*)ENABLE_TESTS_HERE/m,
+    function(placeholder, leadingSpace) {
+	return leadingSpace + tests.map(function(testID) {
+	    return "harness.enableTest(" + JSON.stringify(testID) + ");";
+	}).join("\n" + leadingSpace);
+    }
+);
 
 var server = require("webserver").create();
 server.listen(port, function(req, res) {
-  var file = req.url.replace(/^\/+/, "");
+    var file = req.url.replace(/^\/+/, "");
+    var content;
 
-  switch (file) {
-  case "":
-  default:
-    file = "index.html";
-    break;
+    switch (file) {
+    case "fbemitter-test.js":
+	file = "../build/" + file;
+	break;
 
-  case "fbemitter-test.js":
-    file = "../build/" + file;
-    break;
+    case "jasmine.css":
+	file = "../vendor/jasmine/" + file;
+	break;
 
-  case "jasmine.css":
-  case "jasmine.js":
-  case "jasmine-html.js":
-    file = "../vendor/jasmine/" + file;
-    break;
-  }
+    case "jasmine.js":
+	file = "../vendor/jasmine/" + file;
+	break;
 
-  if (/\.css$/i.test(file)) {
-    res.setHeader("Content-Type", "text/css");
-  } else if (/\.js/i.test(file)) {
-    res.setHeader("Content-Type", "text/javascript");
-  } else {
-    res.setHeader("Content-Type", "text/html");
-  }
+    case "jasmine-html.js":
+	file = "../vendor/jasmine/" + file;
+        break;
 
-  res.statusCode = 200;
-  res.write(fs.read(file));
-  res.close();
+
+    case "":
+    default:
+	file = "index.html";
+	content = indexHtml; // Prevents calling fs.read again.
+	break;
+    }
+
+    if (/\.css$/i.test(file)) {
+	res.setHeader("Content-Type", "text/css");
+    } else if (/\.js/i.test(file)) {
+	res.setHeader("Content-Type", "text/javascript");
+    } else {
+	res.setHeader("Content-Type", "text/html");
+    }
+
+    res.statusCode = 200;
+    res.write(content || fs.read(file));
+    res.close();
 });
 
 var url = "http://localhost:" + port;
@@ -70,47 +93,47 @@ var cyan = "\033[36m";
 var reset = "\033[0m";
 
 if (debug) {
-  console.log(green);
-  console.log("PhantomJS received the " + cyan + "--debug" + green + " option.");
-  console.log("Load " + cyan + url + green + " in your browser to execute " +
-              "the test suite.");
-  console.log("Type " + cyan + "control-C" + green + " to terminate the " +
-              "PhantomJS process.");
-  console.log(reset);
+    console.log(green);
+    console.log("PhantomJS received the " + cyan + "--debug" + green + " option.");
+    console.log("Load " + cyan + url + green + " in your browser to execute " +
+		"the test suite.");
+    console.log("Type " + cyan + "control-C" + green + " to terminate the " +
+		"PhantomJS process.");
+    console.log(reset);
 
   // Leave PhantomJS running until killed with control-C...
 
 } else {
-  var page = require("webpage").create();
-  var timeoutSecs = 60;
+    var page = require("webpage").create();
+    var timeoutSecs = 60;
 
-  page.onCallback = function(data) {
-    switch (data.type) {
-    case "console":
-      console[data.method].apply(console, data.args);
-      break;
+    page.onCallback = function(data) {
+	switch (data.type) {
+	case "console":
+	    console[data.method].apply(console, data.args);
+	    break;
 
-    case "exit":
+	case "exit":
       // PhantomJS crashes sometimes unless we call phantom.exit in its own
       // event loop tick.
-      setTimeout(function() {
-        phantom.exit(data.code);
-      }, 10);
-      break;
-    }
-  };
+	    setTimeout(function() {
+		phantom.exit(data.code);
+	    }, 10);
+	    break;
+	}
+    };
 
-  page.open(url, function(status) {
-    if (status !== "success") {
-      console.error("failed to open " + url);
-      phantom.exit(-1);
-    }
+    page.open(url, function(status) {
+	if (status !== "success") {
+	    console.error("failed to open " + url);
+	    phantom.exit(-1);
+	}
 
-    setTimeout(function() {
-      console.error(
+	setTimeout(function() {
+	    console.error(
         "PhantomJS tests timed out after " +
-        timeoutSecs + " seconds.");
-      phantom.exit(-1);
-    }, timeoutSecs * 1e3);
-  });
+		    timeoutSecs + " seconds.");
+	    phantom.exit(-1);
+	}, timeoutSecs * 1e3);
+    });
 }

@@ -106,7 +106,7 @@
  * })();
  *
  */
-var Syntax = require('esprima').Syntax;
+var Syntax = require('esprima-fb').Syntax;
 var base62 = require('base62');
 
 var catchup = require('../lib/utils').catchup;
