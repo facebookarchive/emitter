@@ -46,7 +46,7 @@
  *   code and they copy the original source, preserving whitespace and comments,
  *   for the parts they don't care about.
  */
-var esprima = require('esprima');
+var esprima = require('esprima-fb');
 
 var createState = require('./utils').createState;
 var catchup = require('./utils').catchup;
