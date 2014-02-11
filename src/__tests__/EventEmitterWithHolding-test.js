@@ -114,7 +114,7 @@ describe('EventEmitterWithHolding', function() {
     emitter.addRetroactiveListener('type1', function() {
       emitter.releaseCurrentEvent();
     });
-    emitter.emit('type1');
+    emitter.emitAndHold('type1');
 
     emitter.addRetroactiveListener('type1', callback);
 
