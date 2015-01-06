@@ -8,7 +8,7 @@ EventEmitter's API shares many concepts with other emitter APIs. When events are
 
 ```js
 var emitter = new EventEmitter();
-emitter.addListener('event', function(x, y) { console.log(x, y); }
+emitter.addListener('event', function(x, y) { console.log(x, y); });
 emitter.emit('event', 5, 10);  // Listener prints "5 10".
 ```
 
