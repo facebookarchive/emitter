@@ -1,6 +1,6 @@
 {
   "name": "fbemitter",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "keywords": [
     "clientside"
   ],
@@ -31,14 +31,14 @@
     "test": "jest"
   },
   "dependencies": {
-    "base62": "~0.1.1",
-    "commoner": "~0.8.4",
-    "esprima-fb": "1001.1001.1000-dev-harmony-fb",
-    "jstransform": "~1.0.0",
-    "recast": "~0.4.8"
+    "commoner": "^0.10.0",
+    "jstransform": "^9.1.0",
+    "object-assign": "^2.0.0"
   },
   "devDependencies": {
-    "browserify": "~2.14.2",
+    "base62": "~0.1.1",
+    "browserify": "^8.1.0",
+    "esprima-fb": "^12001.1.0-dev-harmony-fb",
     "grunt": "~0.4.1",
     "grunt-compare-size": "~0.4.0",
     "grunt-contrib-clean": "~0.4.1",
@@ -52,7 +52,7 @@
     "react-tools": "^0.12.2",
     "semver": ">= 1.1.4",
     "source-map": "~0.1.22",
-    "uglify-js": "~2.3.6",
+    "uglify-js": "~2.4.16",
     "wrapup": "~0.12.0"
   },
   "preferGlobal": true,
@@ -70,5 +70,21 @@
       "/build/",
       "/node_modules/"
     ]
+  },
+  "eslintConfig": {
+    "env": {
+      "jasmine": true
+    },
+    "globals": {
+      "__DEV__": true,
+      "jest": true,
+      "require": true,
+      "module": true
+    },
+    "rules": {
+      "quotes": 0,
+      "no-reserved-keys": 0,
+      "no-underscore-dangle": 0
+    }
   }
 }

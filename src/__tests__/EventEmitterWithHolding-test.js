@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Facebook, Inc.
+ * Copyright 2004-present Facebook. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,7 @@
  */
 'use strict';
 
-require('mock-modules').autoMockOff();
-
-var mocks = require('mocks');
+jest.autoMockOff();
 
 var EventEmitter = require('EventEmitter');
 var EventEmitterWithHolding = require('EventEmitterWithHolding');
@@ -40,7 +38,7 @@ describe('EventEmitterWithHolding', function() {
 
   it('should handle held events', function() {
     var emitter = new EventEmitterRole();
-    var callback = mocks.getMockFunction();
+    var callback = jest.genMockFunction();
 
     emitter.emitAndHold('type1', 'data');
     emitter.addRetroactiveListener('type1', callback);
@@ -52,7 +50,7 @@ describe('EventEmitterWithHolding', function() {
   it('should handle normal events in addition to held events when a ' +
      'retroactive listener is registered', function() {
     var emitter = new EventEmitterRole();
-    var callback = mocks.getMockFunction();
+    var callback = jest.genMockFunction();
 
     emitter.addRetroactiveListener('type1', callback);
     emitter.emit('type1', 'data');
@@ -64,7 +62,7 @@ describe('EventEmitterWithHolding', function() {
   it('does not receive events that were previously emitted in a normal way ' +
      'when told to handleHeld', function() {
     var emitter = new EventEmitterRole();
-    var callback = mocks.getMockFunction();
+    var callback = jest.genMockFunction();
 
     emitter.emit('type1', 'data');
     emitter.addRetroactiveListener('type1', callback);
@@ -76,8 +74,8 @@ describe('EventEmitterWithHolding', function() {
      'retroactive listener, which means that no future retroactive listener ' +
      'will receive that held event', function() {
     var emitter = new EventEmitterRole();
-    var normalCallback = mocks.getMockFunction();
-    var releaseCallback = mocks.getMockFunction();
+    var normalCallback = jest.genMockFunction();
+    var releaseCallback = jest.genMockFunction();
     releaseCallback.mockImplementation(function() {
       emitter.releaseCurrentEvent();
     });
@@ -92,7 +90,7 @@ describe('EventEmitterWithHolding', function() {
   it('allows a listener to still receive events when it is a retroactive ' +
      'listener and it releases a held event', function() {
     var emitter = new EventEmitterRole();
-    var callback = mocks.getMockFunction();
+    var callback = jest.genMockFunction();
     callback.mockImplementation(function(data) {
       emitter.releaseCurrentEvent();
     });
@@ -109,15 +107,95 @@ describe('EventEmitterWithHolding', function() {
   it('allows a listener to release a current event, preventing it from being ' +
      'held', function() {
     var emitter = new EventEmitterRole();
-    var callback = mocks.getMockFunction();
+    var callback = jest.genMockFunction();
 
     emitter.addRetroactiveListener('type1', function() {
       emitter.releaseCurrentEvent();
     });
-    emitter.emitAndHold('type1');
+    emitter.emit('type1');
 
     emitter.addRetroactiveListener('type1', callback);
 
     expect(callback.mock.calls.length).toBe(0);
+  });
+
+  it('allows an EventEmitter to release all held events of a certain type',
+      function() {
+    var emitter = new EventEmitterRole();
+    var callback1 = jest.genMockFunction();
+    var callback2 = jest.genMockFunction();
+
+    emitter.emitAndHold('type1');
+    emitter.addRetroactiveListener('type1', callback1);
+
+    emitter.releaseHeldEventType('type1');
+    emitter.emitAndHold('type1');
+    emitter.addRetroactiveListener('type1', callback2);
+
+    expect(callback1.mock.calls.length).toBe(2);
+    expect(callback2.mock.calls.length).toBe(1);
+  });
+
+  it('allows a listener to remove the current listener', function() {
+    var emitter = new EventEmitterRole();
+    var callback = jest.genMockFunction().mockImplementation(function() {
+      emitter.removeCurrentListener();
+    });
+
+    emitter.emitAndHold('type');
+    emitter.addRetroactiveListener('type', callback);
+    expect(callback.mock.calls.length).toBe(1);
+
+    emitter.emitAndHold('type');
+    expect(callback.mock.calls.length).toBe(1);
+  });
+
+  it('can handle nested subscriptions to held events', function() {
+    var emitter = new EventEmitterRole();
+    var callback1 = jest.genMockFunction();
+    var callback2 = jest.genMockFunction();
+    var callback3 = jest.genMockFunction();
+    var callback4 = jest.genMockFunction();
+    var callback5 = jest.genMockFunction();
+    var callback6 = jest.genMockFunction();
+
+    emitter.emitAndHold('type1');
+    emitter.emitAndHold('type2');
+    emitter.emitAndHold('type3');
+
+    callback1.mockImplementation(function() {
+      emitter.addRetroactiveListener('type2', callback2);
+      // should release type1
+      emitter.releaseCurrentEvent();
+      emitter.removeCurrentListener();
+    });
+
+    callback2.mockImplementation(function() {
+      emitter.addRetroactiveListener('type3', callback3);
+      // should relase type2
+      emitter.releaseCurrentEvent();
+      emitter.removeCurrentListener();
+    });
+
+    emitter.addRetroactiveListener('type1', callback1);
+    expect(callback1.mock.calls.length).toBe(1);
+    expect(callback2.mock.calls.length).toBe(1);
+    expect(callback3.mock.calls.length).toBe(1);
+    // type1 and type2 should have been released now
+    // event3 should still be around
+
+    emitter.emit('type1');
+    emitter.emit('type2');
+    emitter.emit('type3');
+    expect(callback1.mock.calls.length).toBe(1);
+    expect(callback2.mock.calls.length).toBe(1);
+    expect(callback3.mock.calls.length).toBe(2);
+
+    emitter.addRetroactiveListener('type1', callback4);
+    emitter.addRetroactiveListener('type2', callback5);
+    emitter.addRetroactiveListener('type3', callback6);
+    expect(callback4).not.toBeCalled();
+    expect(callback5).not.toBeCalled();
+    expect(callback6.mock.calls.length).toBe(1);
   });
 });

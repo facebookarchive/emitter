@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Facebook, Inc.
+ * Copyright 2004-present Facebook. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -193,19 +193,8 @@ describe('EventEmitter', function() {
       emitter.removeCurrentListener();
     }).toThrow(
       'Invariant Violation: Not in an emitting cycle; there is no current ' +
-      'listener'
+      'subscription'
     );
-  });
-
-  it('allows catching errors within the event publisher', function() {
-    var emitter = new EventEmitter();
-    emitter.addListener('type1', function() {
-      throw new Error('Oops');
-    });
-
-    expect(function() {
-      emitter.emit('type1', 'data');
-    }).toThrow('Oops');
   });
 
   it('returns an array of listeners for an event', function() {

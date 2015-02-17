@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Facebook, Inc.
+ * Copyright 2004-present Facebook. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,14 @@
  *
  * @providesModule mixInEventEmitter
  */
+'use strict';
 
-var EventEmitter = require('EventEmitter');
 var EventEmitterWithHolding = require('EventEmitterWithHolding');
+var EventEmitterWithValidation = require('EventEmitterWithValidation');
 var EventHolder = require('EventHolder');
-var EventValidator = require('EventValidator');
 
-var copyProperties = require('copyProperties');
 var invariant = require('invariant');
-var keyOf = require('keyOf');
-
-var TYPES_KEY = keyOf({__types: true});
+var objectAssign = require('object-assign');
 
 /**
  * API to setup an object or constructor to be able to emit data events.
@@ -50,11 +47,11 @@ var TYPES_KEY = keyOf({__types: true});
  */
 function mixInEventEmitter(klass, types) {
   invariant(types, 'Must supply set of valid event types');
-  invariant(!this.__eventEmitter, 'An active emitter is already mixed in');
 
   // If this is a constructor, write to the prototype, otherwise write to the
   // singleton object.
   var target = klass.prototype || klass;
+  invariant(!target.__eventEmitter, 'An active emitter is already mixed in');
 
   var ctor = klass.constructor;
   if (ctor) {
@@ -64,16 +61,10 @@ function mixInEventEmitter(klass, types) {
     );
   }
 
-  // Keep track of the provided types, union the types if they already exist,
-  // which allows for prototype subclasses to provide more types.
-  if (target.hasOwnProperty(TYPES_KEY)) {
-    copyProperties(target.__types, types);
-  } else if (target.__types) {
-    target.__types = copyProperties({}, target.__types, types);
-  } else {
-    target.__types = types;
-  }
-  copyProperties(target, EventEmitterMixin);
+  // Keep track of the provided types. Union any types that already exist so
+  // that prototypical subclasses can provide more types.
+  target.__types = objectAssign(target.__types || {}, types);
+  target = objectAssign(target, EventEmitterMixin);
 }
 
 var EventEmitterMixin = {
@@ -109,6 +100,10 @@ var EventEmitterMixin = {
     return this.__getEventEmitter().addListenerMap(listenerMap, context);
   },
 
+  listeners: function(eventType) {
+    return this.__getEventEmitter().listeners(eventType);
+  },
+
   removeAllListeners: function() {
     this.__getEventEmitter().removeAllListeners();
   },
@@ -117,15 +112,13 @@ var EventEmitterMixin = {
     this.__getEventEmitter().removeCurrentListener();
   },
 
-  removeSubscription: function(subscription) {
-    this.__getEventEmitter().removeSubscription(subscription);
+  releaseHeldEventType: function(eventType) {
+    this.__getEventEmitter().releaseHeldEventType(eventType);
   },
 
   __getEventEmitter: function() {
     if (!this.__eventEmitter) {
-      var emitter = new EventEmitter();
-      emitter = EventValidator.addValidation(emitter, this.__types);
-
+      var emitter = new EventEmitterWithValidation(this.__types);
       var holder = new EventHolder();
       this.__eventEmitter = new EventEmitterWithHolding(emitter, holder);
     }

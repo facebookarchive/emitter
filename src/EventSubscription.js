@@ -13,21 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * @providesModule fbemitter
+ * @providesModule EventSubscription
+ * @typechecks
  */
+'use strict';
 
-var EventEmitter = require('EventEmitter');
-var EventEmitterWithHolding = require('EventEmitterWithHolding');
-var EventHolder = require('EventHolder');
-var EventEmitterWithValidation = require('EventEmitterWithValidation');
-var mixInEventEmitter = require('mixInEventEmitter');
+/**
+ * EventSubscription represents a subscription to a particular event. It can
+ * remove its own subscription.
+ */
+class EventSubscription {
 
-var fbemitter = {
-  EventEmitter: EventEmitter,
-  EventHolder: EventHolder,
-  EventEmitterWithHolding: EventEmitterWithHolding,
-  EventEmitterWithValidation: EventEmitterWithValidation,
-  mixInEventEmitter: mixInEventEmitter
-};
+  /**
+   * @param {EventSubscriptionVendor} subscriber the subscriber that controls
+   *   this subscription.
+   */
+  constructor(subscriber: EventSubscriptionVendor) {
+    this.subscriber = subscriber;
+  }
 
-module.exports = fbemitter;
+  /**
+   * Removes this subscription from the subscriber that controls it.
+   */
+  remove() {
+    this.subscriber.removeSubscription(this);
+  }
+}
+
+module.exports = EventSubscription;

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Facebook, Inc.
+ * Copyright 2004-present Facebook. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,21 +141,6 @@ describe('mixInEventEmitter', function() {
 
     expect(callback.mock.calls.length).toBe(1);
     expect(callback.mock.calls[0][0]).toBe('data');
-  });
-
-  it('throws when attempting to emit a subclass\'s event on a base class ' +
-     'instance', function() {
-    function Class() {}
-    mixInEventEmitter(Class, {type1: true});
-
-    class Subclass extends Class {}
-    mixInEventEmitter(Subclass, {type2: true});
-
-    var ClassInstance = new Class();
-
-    expect(function() {
-      ClassInstance.emit('type2', 'data');
-    }).toThrow();
   });
 });
 
@@ -377,5 +362,22 @@ describe('EventEmitter instances', function() {
   it('returns nothing from emit', function() {
     var instance = new EventEmitterRole();
     expect(instance.emit('type1')).toBeUndefined();
+  });
+
+  it('allows an mixInEventEmitter to release all held events of a certain type',
+      function() {
+    var emitter = new EventEmitterRole();
+    var callback1 = mocks.getMockFunction();
+    var callback2 = mocks.getMockFunction();
+
+    emitter.emitAndHold('type1');
+    emitter.addRetroactiveListener('type1', callback1);
+
+    emitter.releaseHeldEventType('type1');
+    emitter.emitAndHold('type1');
+    emitter.addRetroactiveListener('type1', callback2);
+
+    expect(callback1.mock.calls.length).toBe(2);
+    expect(callback2.mock.calls.length).toBe(1);
   });
 });

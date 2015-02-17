@@ -3,7 +3,7 @@
 
 var visitors = require('../vendor/fbtransform/visitors').transformVisitors;
 var transform = require('../vendor/fbtransform/lib/transform').transform;
-var debranch = require("../vendor/woodchipper").debranch;
+// var debranch = require("../vendor/woodchipper").debranch;
 
 require("commoner").resolve(function(id) {
   var context = this;
@@ -35,8 +35,10 @@ require("commoner").resolve(function(id) {
     // Debranching means removing any obviously dead code after
     // replacing constant conditional expressions with literal
     // (boolean) values.
+    /*
     debranch(constants, source, function(source) {
       callback(null, source);
     });
+    */
   });
 });
