@@ -28,7 +28,7 @@
     "url": "https://github.com/facebook/emitter"
   },
   "scripts": {
-    "test": "grunt test"
+    "test": "jest"
   },
   "dependencies": {
     "base62": "~0.1.1",
@@ -39,19 +39,36 @@
   },
   "devDependencies": {
     "browserify": "~2.14.2",
-    "wrapup": "~0.12.0",
     "grunt": "~0.4.1",
+    "grunt-compare-size": "~0.4.0",
+    "grunt-contrib-clean": "~0.4.1",
+    "grunt-contrib-compress": "~0.5.1",
     "grunt-contrib-copy": "~0.4.1",
     "grunt-contrib-jshint": "~0.5.4",
+    "gzip-js": "~0.3.2",
+    "jest-cli": "^0.3.0",
     "optimist": "~0.4.0",
     "phantomjs": ">= 1.9.0",
+    "react-tools": "^0.12.2",
     "semver": ">= 1.1.4",
     "source-map": "~0.1.22",
     "uglify-js": "~2.3.6",
-    "grunt-contrib-clean": "~0.4.1",
-    "grunt-compare-size": "~0.4.0",
-    "gzip-js": "~0.3.2",
-    "grunt-contrib-compress": "~0.5.1"
+    "wrapup": "~0.12.0"
   },
-  "preferGlobal": true
+  "preferGlobal": true,
+  "jest": {
+    "rootDir": "",
+    "scriptPreprocessor": "jest/preprocessor.js",
+    "setupEnvScriptFile": "jest/environment.js",
+    "persistModuleRegistryBetweenSpecs": true,
+    "modulePathIgnorePatterns": [
+      "/build/",
+      "/node_modules/",
+      "/.module-cache/"
+    ],
+    "testPathIgnorePatterns": [
+      "/build/",
+      "/node_modules/"
+    ]
+  }
 }
