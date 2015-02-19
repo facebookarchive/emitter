@@ -1,25 +1,42 @@
 /**
- * Copyright 2013 Facebook, Inc.
+ * Copyright 2013-2015, Facebook, Inc.
+ * All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  */
 /*global exports:true*/
 "use strict";
 
-var Syntax = require('esprima-fb').Syntax;
-var catchup = require('../lib/utils').catchup;
-var append = require('../lib/utils').append;
-var getDocblock = require('../lib/utils').getDocblock;
+var Syntax = require('jstransform').Syntax;
+var utils = require('jstransform/src/utils');
+
+function addDisplayName(displayName, object, state) {
+  if (object &&
+      object.type === Syntax.CallExpression &&
+      object.callee.type === Syntax.MemberExpression &&
+      object.callee.object.type === Syntax.Identifier &&
+      object.callee.object.name === 'React' &&
+      object.callee.property.type === Syntax.Identifier &&
+      object.callee.property.name === 'createClass' &&
+      object['arguments'].length === 1 &&
+      object['arguments'][0].type === Syntax.ObjectExpression) {
+    // Verify that the displayName property isn't already set
+    var properties = object['arguments'][0].properties;
+    var safe = properties.every(function(property) {
+      var value = property.key.type === Syntax.Identifier ?
+        property.key.name :
+        property.key.value;
+      return value !== 'displayName';
+    });
+
+    if (safe) {
+      utils.catchup(object['arguments'][0].range[0] + 1, state);
+      utils.append('displayName: "' + displayName + '",', state);
+    }
+  }
+}
 
 /**
  * Transforms the following:
@@ -34,34 +51,43 @@ var getDocblock = require('../lib/utils').getDocblock;
  *    displayName: 'MyComponent',
  *    render: ...
  * });
+ *
+ * Also catches:
+ *
+ * MyComponent = React.createClass(...);
+ * exports.MyComponent = React.createClass(...);
+ * module.exports = {MyComponent: React.createClass(...)};
  */
 function visitReactDisplayName(traverse, object, path, state) {
-  object.declarations.forEach(function(dec) {
-    if (dec.type === Syntax.VariableDeclarator &&
-        dec.id.type === Syntax.Identifier &&
-        dec.init &&
-        dec.init.type === Syntax.CallExpression &&
-        dec.init.callee.type === Syntax.MemberExpression &&
-        dec.init.callee.object.type === Syntax.Identifier &&
-        dec.init.callee.object.name === 'React' &&
-        dec.init.callee.property.type === Syntax.Identifier &&
-        dec.init.callee.property.name === 'createClass' &&
-        dec.init['arguments'].length === 1 &&
-        dec.init['arguments'][0].type === Syntax.ObjectExpression) {
+  var left, right;
 
-      var displayName = dec.id.name;
-      catchup(dec.init['arguments'][0].range[0] + 1, state);
-      append("displayName: '" + displayName + "',", state);
-    }
-  });
+  if (object.type === Syntax.AssignmentExpression) {
+    left = object.left;
+    right = object.right;
+  } else if (object.type === Syntax.Property) {
+    left = object.key;
+    right = object.value;
+  } else if (object.type === Syntax.VariableDeclarator) {
+    left = object.id;
+    right = object.init;
+  }
+
+  if (left && left.type === Syntax.MemberExpression) {
+    left = left.property;
+  }
+  if (left && left.type === Syntax.Identifier) {
+    addDisplayName(left.name, right, state);
+  }
 }
 
-
-/**
- * Will only run on @jsx files for now.
- */
 visitReactDisplayName.test = function(object, path, state) {
-  return object.type === Syntax.VariableDeclaration && !!getDocblock(state).jsx;
+  return (
+    object.type === Syntax.AssignmentExpression ||
+    object.type === Syntax.Property ||
+    object.type === Syntax.VariableDeclarator
+  );
 };
 
-exports.visitReactDisplayName = visitReactDisplayName;
+exports.visitorList = [
+  visitReactDisplayName
+];

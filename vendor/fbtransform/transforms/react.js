@@ -1,198 +1,242 @@
 /**
- * Copyright 2013 Facebook, Inc.
+ * Copyright 2013-2015, Facebook, Inc.
+ * All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  */
 /*global exports:true*/
 "use strict";
 
-var Syntax = require('esprima-fb').Syntax;
+var Syntax = require('jstransform').Syntax;
+var utils = require('jstransform/src/utils');
 
-var catchup = require('../lib/utils').catchup;
-var append = require('../lib/utils').append;
-var move = require('../lib/utils').move;
-var getDocblock = require('../lib/utils').getDocblock;
-
-var FALLBACK_TAGS = require('./xjs').knownTags;
-var renderXJSExpression = require('./xjs').renderXJSExpression;
+var renderXJSExpressionContainer =
+  require('./xjs').renderXJSExpressionContainer;
 var renderXJSLiteral = require('./xjs').renderXJSLiteral;
 var quoteAttrName = require('./xjs').quoteAttrName;
 
+var trimLeft = require('./xjs').trimLeft;
+
 /**
- * Customized desugar processor.
+ * Customized desugar processor for React JSX. Currently:
  *
- * Currently: (Somewhat tailored to React)
- * <X> </X> => X(null, null)
- * <X prop="1" /> => X({prop: '1'}, null)
- * <X prop="2"><Y /></X> => X({prop:'2'}, Y(null, null))
- * <X prop="2"><Y /><Z /></X> => X({prop:'2'}, [Y(null, null), Z(null, null)])
- *
- * Exceptions to the simple rules above:
- * if a property is named "class" it will be changed to "className" in the
- * javascript since "class" is not a valid object key in javascript.
+ * <X> </X> => React.createElement(X, null)
+ * <X prop="1" /> => React.createElement(X, {prop: '1'}, null)
+ * <X prop="2"><Y /></X> => React.createElement(X, {prop:'2'},
+ *   React.createElement(Y, null)
+ * )
+ * <div /> => React.createElement("div", null)
  */
 
-var JSX_ATTRIBUTE_RENAMES = {
-  'class': 'className',
-  cxName: 'className'
-};
+/**
+ * Removes all non-whitespace/parenthesis characters
+ */
+var reNonWhiteParen = /([^\s\(\)])/g;
+function stripNonWhiteParen(value) {
+  return value.replace(reNonWhiteParen, '');
+}
 
-var JSX_ATTRIBUTE_TRANSFORMS = {
-  cxName: function(attr) {
-    if (attr.value.type !== Syntax.Literal) {
-      throw new Error("cx only accepts a string literal");
-    } else {
-      var classNames = attr.value.value.split(/\s+/g);
-      return 'cx(' + classNames.map(JSON.stringify).join(',') + ')';
-    }
-  }
-};
+var tagConvention = /^[a-z]|\-/;
+function isTagName(name) {
+  return tagConvention.test(name);
+}
 
 function visitReactTag(traverse, object, path, state) {
-  var jsxObjIdent = getDocblock(state).jsx;
+  var openingElement = object.openingElement;
+  var nameObject = openingElement.name;
+  var attributesObject = openingElement.attributes;
 
-  catchup(object.openingElement.range[0], state);
+  utils.catchup(openingElement.range[0], state, trimLeft);
 
-  if (object.name.namespace) {
-    throw new Error(
-       'Namespace tags are not supported. ReactJSX is not XML.');
+  if (nameObject.type === Syntax.XJSNamespacedName && nameObject.namespace) {
+    throw new Error('Namespace tags are not supported. ReactJSX is not XML.');
   }
 
-  var isFallbackTag = FALLBACK_TAGS[object.name.name];
-  append(
-    (isFallbackTag ? jsxObjIdent + '.' : '') + (object.name.name) + '(',
-    state
-  );
+  // We assume that the React runtime is already in scope
+  utils.append('React.createElement(', state);
 
-  move(object.name.range[1], state);
+  if (nameObject.type === Syntax.XJSIdentifier && isTagName(nameObject.name)) {
+    utils.append('"' + nameObject.name + '"', state);
+    utils.move(nameObject.range[1], state);
+  } else {
+    // Use utils.catchup in this case so we can easily handle
+    // XJSMemberExpressions which look like Foo.Bar.Baz. This also handles
+    // XJSIdentifiers that aren't fallback tags.
+    utils.move(nameObject.range[0], state);
+    utils.catchup(nameObject.range[1], state);
+  }
 
-  var childrenToRender = object.children.filter(function(child) {
-    return !(child.type === Syntax.Literal && !child.value.match(/\S/));
+  utils.append(', ', state);
+
+  var hasAttributes = attributesObject.length;
+
+  var hasAtLeastOneSpreadProperty = attributesObject.some(function(attr) {
+    return attr.type === Syntax.XJSSpreadAttribute;
   });
 
   // if we don't have any attributes, pass in null
-  if (object.attributes.length === 0) {
-    append('null', state);
+  if (hasAtLeastOneSpreadProperty) {
+    utils.append('React.__spread({', state);
+  } else if (hasAttributes) {
+    utils.append('{', state);
+  } else {
+    utils.append('null', state);
   }
 
+  // keep track of if the previous attribute was a spread attribute
+  var previousWasSpread = false;
+
   // write attributes
-  object.attributes.forEach(function(attr, index) {
-    catchup(attr.range[0], state);
+  attributesObject.forEach(function(attr, index) {
+    var isLast = index === attributesObject.length - 1;
+
+    if (attr.type === Syntax.XJSSpreadAttribute) {
+      // Close the previous object or initial object
+      if (!previousWasSpread) {
+        utils.append('}, ', state);
+      }
+
+      // Move to the expression start, ignoring everything except parenthesis
+      // and whitespace.
+      utils.catchup(attr.range[0], state, stripNonWhiteParen);
+      // Plus 1 to skip `{`.
+      utils.move(attr.range[0] + 1, state);
+      utils.catchup(attr.argument.range[0], state, stripNonWhiteParen);
+
+      traverse(attr.argument, path, state);
+
+      utils.catchup(attr.argument.range[1], state);
+
+      // Move to the end, ignoring parenthesis and the closing `}`
+      utils.catchup(attr.range[1] - 1, state, stripNonWhiteParen);
+
+      if (!isLast) {
+        utils.append(', ', state);
+      }
+
+      utils.move(attr.range[1], state);
+
+      previousWasSpread = true;
+
+      return;
+    }
+
+    // If the next attribute is a spread, we're effective last in this object
+    if (!isLast) {
+      isLast = attributesObject[index + 1].type === Syntax.XJSSpreadAttribute;
+    }
+
     if (attr.name.namespace) {
       throw new Error(
          'Namespace attributes are not supported. ReactJSX is not XML.');
     }
-    var name = JSX_ATTRIBUTE_RENAMES[attr.name.name] || attr.name.name;
-    var isFirst = index === 0;
-    var isLast = index === object.attributes.length - 1;
+    var name = attr.name.name;
 
-    if (isFirst) {
-      append('{', state);
+    utils.catchup(attr.range[0], state, trimLeft);
+
+    if (previousWasSpread) {
+      utils.append('{', state);
     }
 
-    append(quoteAttrName(name), state);
-    append(':', state);
+    utils.append(quoteAttrName(name), state);
+    utils.append(': ', state);
 
     if (!attr.value) {
       state.g.buffer += 'true';
       state.g.position = attr.name.range[1];
       if (!isLast) {
-        append(',', state);
+        utils.append(', ', state);
       }
-    } else if (JSX_ATTRIBUTE_TRANSFORMS[attr.name.name]) {
-      move(attr.value.range[0], state);
-      append(JSX_ATTRIBUTE_TRANSFORMS[attr.name.name](attr), state);
-      move(attr.value.range[1], state);
-      if (!isLast) {
-        append(',', state);
-      }
-    } else if (attr.value.type === Syntax.Literal) {
-      move(attr.value.range[0], state);
-      renderXJSLiteral(attr.value, isLast, state);
     } else {
-      move(attr.value.range[0], state);
-      renderXJSExpression(traverse, attr.value, isLast, path, state);
+      utils.move(attr.name.range[1], state);
+      // Use catchupNewlines to skip over the '=' in the attribute
+      utils.catchupNewlines(attr.value.range[0], state);
+      if (attr.value.type === Syntax.Literal) {
+        renderXJSLiteral(attr.value, isLast, state);
+      } else {
+        renderXJSExpressionContainer(traverse, attr.value, isLast, path, state);
+      }
     }
 
-    if (isLast) {
-      append('}', state);
-    }
+    utils.catchup(attr.range[1], state, trimLeft);
 
-    catchup(attr.range[1], state);
+    previousWasSpread = false;
+
   });
 
-  if (!object.selfClosing) {
-    catchup(object.openingElement.range[1] - 1, state);
-    move(object.openingElement.range[1], state);
+  if (!openingElement.selfClosing) {
+    utils.catchup(openingElement.range[1] - 1, state, trimLeft);
+    utils.move(openingElement.range[1], state);
   }
 
-  // separate props and children arguments
-  append(', ', state);
+  if (hasAttributes && !previousWasSpread) {
+    utils.append('}', state);
+  }
+
+  if (hasAtLeastOneSpreadProperty) {
+    utils.append(')', state);
+  }
 
   // filter out whitespace
+  var childrenToRender = object.children.filter(function(child) {
+    return !(child.type === Syntax.Literal
+             && typeof child.value === 'string'
+             && child.value.match(/^[ \t]*[\r\n][ \t\r\n]*$/));
+  });
   if (childrenToRender.length > 0) {
-    if (childrenToRender.length > 1) {
-      append('[', state);
-    }
-    object.children.forEach(function(child) {
-      if (child.type === Syntax.Literal && !child.value.match(/\S/)) {
-        return;
-      }
-      catchup(child.range[0], state);
+    var lastRenderableIndex;
 
-      var isLast = child === childrenToRender[childrenToRender.length - 1];
+    childrenToRender.forEach(function(child, index) {
+      if (child.type !== Syntax.XJSExpressionContainer ||
+          child.expression.type !== Syntax.XJSEmptyExpression) {
+        lastRenderableIndex = index;
+      }
+    });
+
+    if (lastRenderableIndex !== undefined) {
+      utils.append(', ', state);
+    }
+
+    childrenToRender.forEach(function(child, index) {
+      utils.catchup(child.range[0], state, trimLeft);
+
+      var isLast = index >= lastRenderableIndex;
 
       if (child.type === Syntax.Literal) {
         renderXJSLiteral(child, isLast, state);
-      } else if (child.type === Syntax.XJSExpression) {
-        renderXJSExpression(traverse, child, isLast, path, state);
+      } else if (child.type === Syntax.XJSExpressionContainer) {
+        renderXJSExpressionContainer(traverse, child, isLast, path, state);
       } else {
         traverse(child, path, state);
         if (!isLast) {
-          append(',', state);
-          state.g.buffer = state.g.buffer.replace(/(\s*),$/, ',$1');
+          utils.append(', ', state);
         }
       }
 
-      catchup(child.range[1], state);
+      utils.catchup(child.range[1], state, trimLeft);
     });
-  } else {
-    append('null', state);
   }
 
-  if (object.selfClosing) {
+  if (openingElement.selfClosing) {
     // everything up to />
-    catchup(object.openingElement.range[1] - 2, state);
-    move(object.openingElement.range[1], state);
+    utils.catchup(openingElement.range[1] - 2, state, trimLeft);
+    utils.move(openingElement.range[1], state);
   } else {
     // everything up to </ sdflksjfd>
-    catchup(object.closingElement.range[0], state);
-    move(object.closingElement.range[1], state);
+    utils.catchup(object.closingElement.range[0], state, trimLeft);
+    utils.move(object.closingElement.range[1], state);
   }
 
-  if (childrenToRender.length > 0) {
-    if (childrenToRender.length > 1) {
-      append(']', state);
-    }
-  }
-  append(')', state);
+  utils.append(')', state);
   return false;
 }
 
 visitReactTag.test = function(object, path, state) {
-  // only run react when react @jsx namespace is specified in docblock
-  var jsx = getDocblock(state).jsx;
-  return object.type === Syntax.XJSElement && jsx && jsx.length;
+  return object.type === Syntax.XJSElement;
 };
 
-exports.visitReactTag = visitReactTag;
+exports.visitorList = [
+  visitReactTag
+];

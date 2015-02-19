@@ -3,7 +3,8 @@
 /*global exports:true*/
 "use strict";
 
-var transform = require('./lib/transform').transform;
+var transform = require('jstransform').transform;
+var typesSyntax = require('jstransform/visitors/type-syntax');
 var visitors = require('./visitors');
 
 /**
@@ -16,9 +17,15 @@ var visitors = require('./visitors');
 function transformAll(source, options, excludes) {
   excludes = excludes || [];
 
+  // Stripping types needs to happen before the other transforms
+  // unfortunately, due to bad interactions. For example,
+  // es6-rest-param-visitors conflict with stripping rest param type
+  // annotation
+  source = transform(typesSyntax.visitorList, source, options).code;
+
   // The typechecker transform must run in a second pass in order to operate on
   // the entire source code -- so exclude it from the first pass
-  var visitorsList = visitors.getVisitorsList(excludes.concat('typechecker'));
+  var visitorsList = visitors.getAllVisitors(excludes.concat('typechecker'));
   source = transform(visitorsList, source, options);
   if (excludes.indexOf('typechecks') == -1 && /@typechecks/.test(source.code)) {
     source = transform(
@@ -54,7 +61,12 @@ function runCli(argv) {
     source += chunk;
   });
   process.stdin.on('end', function () {
-    source = transformAll(source, options, excludes);
+    try {
+      source = transformAll(source, options, excludes);
+    } catch (e) {
+      console.error(e.stack);
+      process.exit(1);
+    }
     process.stdout.write(source.code);
   });
 }

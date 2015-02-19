@@ -1,44 +1,46 @@
 #!/usr/bin/env node
-"use strict";
+// -*- mode: js -*-
+'use strict';
 
-var visitors = require('../vendor/fbtransform/visitors').transformVisitors;
-var transform = require('../vendor/fbtransform/lib/transform').transform;
-// var debranch = require("../vendor/woodchipper").debranch;
+var transform = require('../main').transform;
 
-require("commoner").resolve(function(id) {
-  var context = this;
-
-  // Note that the result of context.getProvidedP() is cached for the
-  // duration of the build, so it is both consistent and cheap to
-  // evaluate multiple times.
-  return context.getProvidedP().then(function(idToPath) {
-    // If a module declares its own identifier using @providesModule
-    // then that identifier will be a key in the idToPath object.
-    if (idToPath.hasOwnProperty(id)) {
-      return context.readFileP(idToPath[id]);
-    }
-
-    // Otherwise assume the identifier maps directly to a path in the
-    // filesystem.
-    return context.readModuleP(id);
-  });
-
-}).process(function(id, source) {
-  var context = this;
+require('commoner').version(
+  require('../package.json').version
+).resolve(function(id) {
+  return this.readModuleP(id);
+}).option(
+  '--harmony',
+  'Turns on JS transformations such as ES6 Classes etc.'
+).option(
+  '--strip-types',
+  'Strips out type annotations.'
+).option(
+  '--es6module',
+  'Parses the file as a valid ES6 module. ' +
+  '(Note that this means implicit strict mode)'
+).option(
+  '--non-strict-es6module',
+  'Parses the file as an ES6 module, except disables implicit strict-mode. ' +
+  '(This is useful if you\'re porting non-ES6 modules to ES6, but haven\'t ' +
+  'yet verified that they are strict-mode safe yet)'
+).option(
+  '--source-map-inline',
+  'Embed inline sourcemap in transformed source'
+).process(function(id, source) {
+  var sourceType;
+  if (this.options.es6module) {
+    sourceType = 'module';
+  }
+  if (this.options.nonStrictEs6module) {
+    sourceType = 'nonStrictModule';
+  }
 
   // This is where JSX, ES6, etc. desugaring happens.
-  source = transform(visitors.react, source).code;
-
-  return context.makePromise(function(callback) {
-    var constants = context.config.constants || {};
-
-    // Debranching means removing any obviously dead code after
-    // replacing constant conditional expressions with literal
-    // (boolean) values.
-    /*
-    debranch(constants, source, function(source) {
-      callback(null, source);
-    });
-    */
-  });
+  var options = {
+    harmony: this.options.harmony,
+    sourceMap: this.options.sourceMapInline,
+    stripTypes: this.options.stripTypes,
+    sourceType: sourceType,
+  };
+  return transform(source, options);
 });
