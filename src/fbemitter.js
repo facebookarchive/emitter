@@ -19,16 +19,13 @@
 var EventEmitter = require('EventEmitter');
 var EventEmitterWithHolding = require('EventEmitterWithHolding');
 var EventHolder = require('EventHolder');
-var EventValidator = require('EventValidator');
-
-var mixInEventEmitter = require('mixInEventEmitter');
+var EventEmitterWithValidation = require('EventEmitterWithValidation');
 
 var fbemitter = {
   EventEmitter: EventEmitter,
-  EventEmitterWithHolding: EventEmitterWithHolding,
   EventHolder: EventHolder,
-  EventValidator: EventValidator,
-  mixInEventEmitter: mixInEventEmitter
+  EventEmitterWithHolding: EventEmitterWithHolding,
+  EventEmitterWithValidation: EventEmitterWithValidation
 };
 
 module.exports = fbemitter;

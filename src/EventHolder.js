@@ -22,17 +22,19 @@ var invariant = require('invariant');
 
 class EventHolder {
   constructor() {
-    this._heldEvents = [];
-    this._eventsToRemove = [];
-    this._currentEventKey = null;
+    this._heldEvents = {};
+    this._currentEventKey = [];
   }
 
   /**
    * Holds a given event for processing later.
    *
+   * TODO: Annotate return type better. The structural type of the return here
+   *       is pretty obvious.
+   *
    * @param {string} eventType - Name of the event to hold and later emit
    * @param {...*} Arbitrary arguments to be passed to each registered listener
-   * @return {*} Token that can be used to release the held event
+   * @return {object} Token that can be used to release the held event
    *
    * @example
    *
@@ -45,53 +47,41 @@ class EventHolder {
    *   }); //logs 'abc'
    *
    */
-  holdEvent(eventType, a, b, c, d, e, _) {
-    var key = this._heldEvents.length;
-    var event = [eventType, a, b, c, d, e, _];
-    this._heldEvents.push(event);
+  holdEvent(eventType: String, a, b, c, d, e, _) {
+    this._heldEvents[eventType] = this._heldEvents[eventType] || [];
+    var eventsOfType = this._heldEvents[eventType];
+    var key = {
+      eventType: eventType,
+      index: eventsOfType.length
+    };
+    eventsOfType.push([a, b, c, d, e, _]);
     return key;
   }
 
   /**
    * Emits the held events of the specified type to the given listener.
    *
-   * NOTE: It might be necessary in the future to store the held events
-   * according to type so that we do not need to loop over all possible events
-   * when we know that a handler can not handle this. However this would only be
-   * an optimization when there were a large number of events, and it seems that
-   * most cases where you would want to "hold" an event there would be a small
-   * amount of them. If this is proved to be otherwise we should trade space for
-   * time. This is also harder to implement if the order of events matters.
-   *
    * @param {?string} eventType - Optional name of the events to replay
    * @param {function} listener - The listener to which to dispatch the event
    * @param {?object} context - Optional context object to use when invoking
    *   the listener
    */
-  emitToListener(eventType, listener, context) {
-    this.forEachHeldEvent(function(type, a, b, c, d, e, _) {
-      if (type === eventType) {
-        listener.call(context, a, b, c, d, e, _);
+  emitToListener(eventType: ?String , listener, context: ?Object) {
+    var eventsOfType = this._heldEvents[eventType];
+    if (!eventsOfType) {
+      return;
+    }
+    eventsOfType.forEach((/*?array*/ eventHeld, /*number*/ index) => {
+      if (!eventHeld) {
+        return;
       }
+      this._currentEventKey.push({
+        eventType: eventType,
+        index: index
+      });
+      listener.apply(context, eventHeld);
+      this._currentEventKey.pop();
     });
-  }
-
-  /**
-   * Synchronously iterates over all of the events held by this holder,
-   * optionally filtering by an event type.
-   *
-   * @param {function} callback - The callback to which to dispatch the event.
-   *   It should accept the event type as the first argument and arbitrary
-   *   event data as the remaining arguments.
-   * @param {?object} context - Optional context object to use when invoking
-   *   the listener
-   */
-  forEachHeldEvent(callback, context) {
-    this._heldEvents.forEach(function(event, key) {
-      this._currentEventKey = key;
-      callback.apply(context, event);
-    }, this);
-    this._currentEventKey = null;
   }
 
   /**
@@ -104,20 +94,29 @@ class EventHolder {
    */
   releaseCurrentEvent() {
     invariant(
-      this._currentEventKey !== null,
+      this._currentEventKey.length,
       'Not in an emitting cycle; there is no current event'
     );
-    delete this._heldEvents[this._currentEventKey];
+    this.releaseEvent(this._currentEventKey[this._currentEventKey.length - 1]);
   }
 
   /**
    * Releases the event corresponding to the handle that was returned when the
    * event was first held.
    *
-   * @param {*} token - The token returned from holdEvent
+   * @param {object} token - The token returned from holdEvent
    */
-  releaseEvent(token) {
-    delete this._heldEvents[token];
+  releaseEvent(token: Object) {
+    delete this._heldEvents[token.eventType][token.index];
+  }
+
+  /**
+   * Releases all events of a certain type.
+   *
+   * @param {string} type
+   */
+  releaseEventType(type: String) {
+    this._heldEvents[type] = [];
   }
 }
 

@@ -42,20 +42,21 @@ class EventEmitterWithHolding {
     this._emitter = emitter;
     this._eventHolder = holder;
     this._currentEventToken = null;
-    this._emittingHeldEvents = false;
+    this._heldEventsRemovalStack = [];
+    this._heldEventsEmitDepth = 0;
   }
 
   /**
    * @see EventEmitter#addListener
    */
-  addListener(eventType, listener, context) {
+  addListener(eventType: String, listener, context: ?Object) {
     return this._emitter.addListener(eventType, listener, context);
   }
 
   /**
    * @see EventEmitter#once
    */
-  once(eventType, listener, context) {
+  once(eventType: String, listener, context: ?Object) {
     return this._emitter.once(eventType, listener, context);
   }
 
@@ -79,12 +80,20 @@ class EventEmitterWithHolding {
    *     console.log(message);
    *   }); // logs 'abc'
    */
-  addRetroactiveListener(eventType, listener, context) {
+  addRetroactiveListener(
+    eventType: String, listener, context: ?Object): EmitterSubscription {
     var subscription = this._emitter.addListener(eventType, listener, context);
 
-    this._emittingHeldEvents = true;
+    var removeListenerStack = this._heldEventsRemovalStack;
+    removeListenerStack.push(false);
+    this._heldEventsEmitDepth++;
     this._eventHolder.emitToListener(eventType, listener, context);
-    this._emittingHeldEvents = false;
+    this._heldEventsEmitDepth--;
+
+    if (removeListenerStack[removeListenerStack.length - 1]) {
+      subscription.remove();
+    }
+    removeListenerStack.pop();
 
     return subscription;
   }
@@ -92,7 +101,7 @@ class EventEmitterWithHolding {
   /**
    * @see EventEmitter#removeAllListeners
    */
-  removeAllListeners(eventType) {
+  removeAllListeners(eventType: String) {
     this._emitter.removeAllListeners(eventType);
   }
 
@@ -100,27 +109,25 @@ class EventEmitterWithHolding {
    * @see EventEmitter#removeCurrentListener
    */
   removeCurrentListener() {
-    this._emitter.removeCurrentListener();
-  }
-
-  /**
-   * @see EventEmitter#removeSubscription
-   */
-  removeSubscription(subscription) {
-    this._emitter.removeSubscription(subscription);
+    if (this._heldEventsEmitDepth) {
+      var removeListenerStack = this._heldEventsRemovalStack;
+      removeListenerStack[removeListenerStack.length - 1] = true;
+    } else {
+      this._emitter.removeCurrentListener();
+    }
   }
 
   /**
    * @see EventEmitter#listeners
    */
-  listeners(eventType) {
+  listeners(eventType: String) /* TODO: Annotate return type here */ {
     return this._emitter.listeners(eventType);
   }
 
   /**
    * @see EventEmitter#emit
    */
-  emit(eventType, a, b, c, d, e, _) {
+  emit(eventType: String, a, b, c, d, e, _) {
     this._emitter.emit(eventType, a, b, c, d, e, _);
   }
 
@@ -139,7 +146,7 @@ class EventEmitterWithHolding {
    *     console.log(message);
    *   }); // logs 'abc'
    */
-  emitAndHold(eventType, a, b, c, d, e, _) {
+  emitAndHold(eventType: String, a, b, c, d, e, _) {
     this._currentEventToken = this._eventHolder.holdEvent(
       eventType,
       a, b, c, d, e, _
@@ -154,9 +161,17 @@ class EventEmitterWithHolding {
   releaseCurrentEvent() {
     if (this._currentEventToken !== null) {
       this._eventHolder.releaseEvent(this._currentEventToken);
-    } else if (this._emittingHeldEvents) {
+    } else if (!!this._heldEventsEmitDepth) {
       this._eventHolder.releaseCurrentEvent();
     }
+  }
+
+  /**
+   * @see EventHolder#releaseEventType
+   * @param {string} eventType
+   */
+  releaseHeldEventType(eventType: String) {
+    this._eventHolder.releaseEventType(eventType);
   }
 }
 

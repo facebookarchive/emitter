@@ -13,46 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * @providesModule EventValidator
+ * @providesModule EventEmitterWithValidation
+ * @typechecks
  */
+
 'use strict';
 
-var copyProperties = require('copyProperties');
+var EventEmitter = require('EventEmitter');
 
 /**
- * EventValidator is designed to validate event types to make it easier to catch
- * common mistakes. It accepts a map of all of the different types of events
- * that the emitter can emit. Then, if a user attempts to emit an event that is
- * not one of those specified types the emitter will throw an error. Also, it
- * provides a relatively simple matcher so that if it thinks that you likely
- * mistyped the event name it will suggest what you might have meant to type in
- * the error message.
+ * @class EventEmitterWithValidation
  */
-var EventValidator = {
+class EventEmitterWithValidation extends EventEmitter {
   /**
-   * @param {Object} emitter - The object responsible for emitting the actual
-   *                             events
-   * @param {Object} types - The collection of valid types that will be used to
-   *                         check for errors
-   * @return {Object} A new emitter with event type validation
-   * @example
-   *   var types = {someEvent: true, anotherEvent: true};
-   *   var emitter = EventValidator.addValidation(emitter, types);
+   * @constructor
+   * @param {object} eventTypes Collection of valid event types.
    */
-  addValidation: function(emitter, types) {
-    var eventTypes = Object.keys(types);
-    var emitterWithValidation = Object.create(emitter);
-
-    copyProperties(emitterWithValidation, {
-      emit: function emit(type, a, b, c, d, e, _) {
-        assertAllowsEventType(type, eventTypes);
-        return emitter.emit.call(this, type, a, b, c, d, e, _);
-      }
-    });
-
-    return emitterWithValidation;
+  constructor(eventTypes) {
+    super();
+    this._eventTypes = Object.keys(eventTypes);
   }
-};
+
+  /**
+   * @param {string} eventType Name of the event to emit.
+   * @param {...*} Arbitrary arguments to be passed to each registered listener.
+   */
+  emit(eventType) {
+    assertAllowsEventType(eventType, this._eventTypes);
+    return super.emit.apply(this, arguments);
+  }
+}
 
 function assertAllowsEventType(type, allowedTypes) {
   if (allowedTypes.indexOf(type) === -1) {
@@ -71,7 +61,7 @@ function errorMessageFor(type, allowedTypes) {
 
 // Allow for good error messages
 if (__DEV__) {
-  var recommendationFor = function (type, allowedTypes) {
+  var recommendationFor = function(type, allowedTypes) {
     var closestTypeRecommendation = closestTypeFor(type, allowedTypes);
     if (isCloseEnough(closestTypeRecommendation, type)) {
       return 'Did you mean "' + closestTypeRecommendation.type + '"? ';
@@ -80,21 +70,21 @@ if (__DEV__) {
     }
   };
 
-  var closestTypeFor = function (type, allowedTypes) {
+  var closestTypeFor = function(type, allowedTypes) {
     var typeRecommendations = allowedTypes.map(
       typeRecommendationFor.bind(this, type)
     );
     return typeRecommendations.sort(recommendationSort)[0];
   };
 
-  var typeRecommendationFor = function (type, recomendedType) {
+  var typeRecommendationFor = function(type, recomendedType) {
     return {
       type: recomendedType,
       distance: damerauLevenshteinDistance(type, recomendedType)
     };
   };
 
-  var recommendationSort = function (recommendationA, recommendationB) {
+  var recommendationSort = function(recommendationA, recommendationB) {
     if (recommendationA.distance < recommendationB.distance) {
       return -1;
     } else if (recommendationA.distance > recommendationB.distance) {
@@ -104,11 +94,11 @@ if (__DEV__) {
     }
   };
 
-  var isCloseEnough = function (closestType, actualType) {
+  var isCloseEnough = function(closestType, actualType) {
     return (closestType.distance / actualType.length) < 0.334;
   };
 
-  var damerauLevenshteinDistance = function (a, b) {
+  var damerauLevenshteinDistance = function(a, b) {
     var i, j;
     var d = [];
 
@@ -142,4 +132,4 @@ if (__DEV__) {
   };
 }
 
-module.exports = EventValidator;
+module.exports = EventEmitterWithValidation;

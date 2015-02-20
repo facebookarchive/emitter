@@ -1,6 +1,6 @@
 {
   "name": "fbemitter",
-  "version": "1.0.0",
+  "version": "2.0.0-alpha",
   "keywords": [
     "clientside"
   ],
@@ -12,17 +12,8 @@
     }
   ],
   "files": [
-    "README.md",
-    "main.js",
-    "bin/jsx",
-    "build/React.js",
-    "vendor/fbtransform/",
-    "vendor/woodchipper.js"
+    "README.md"
   ],
-  "main": "main.js",
-  "bin": {
-    "jsx": "./bin/jsx"
-  },
   "repository": {
     "type": "git",
     "url": "https://github.com/facebook/emitter"
@@ -30,15 +21,11 @@
   "scripts": {
     "test": "jest"
   },
-  "dependencies": {
-    "base62": "~0.1.1",
-    "commoner": "~0.8.4",
-    "esprima-fb": "1001.1001.1000-dev-harmony-fb",
-    "jstransform": "~1.0.0",
-    "recast": "~0.4.8"
-  },
   "devDependencies": {
-    "browserify": "~2.14.2",
+    "base62": "~0.1.1",
+    "browserify": "^8.1.0",
+    "commoner": "^0.10.0",
+    "esprima-fb": "^12001.1.0-dev-harmony-fb",
     "grunt": "~0.4.1",
     "grunt-compare-size": "~0.4.0",
     "grunt-contrib-clean": "~0.4.1",
@@ -47,15 +34,21 @@
     "grunt-contrib-jshint": "~0.5.4",
     "gzip-js": "~0.3.2",
     "jest-cli": "^0.3.0",
+    "jstransform": "^9.1.0",
+    "object-assign": "^2.0.0",
     "optimist": "~0.4.0",
     "phantomjs": ">= 1.9.0",
     "react-tools": "^0.12.2",
+    "recast": "^0.9.11",
     "semver": ">= 1.1.4",
     "source-map": "~0.1.22",
-    "uglify-js": "~2.3.6",
+    "uglify-js": "~2.4.16",
     "wrapup": "~0.12.0"
   },
   "preferGlobal": true,
+  "commonerConfig": {
+    "version": 1
+  },
   "jest": {
     "rootDir": "",
     "scriptPreprocessor": "jest/preprocessor.js",

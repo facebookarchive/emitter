@@ -122,4 +122,37 @@ describe('EventHolder', function() {
 
     expect(callback.mock.calls.length).toBe(0);
   });
+
+  it('allows releasing an event after a nested emit call', function() {
+    var holder = new EventHolder();
+    var callback = mocks.getMockFunction();
+    holder.holdEvent('click', 'data');
+
+    holder.emitToListener('click', () => {
+      holder.emitToListener('other', () => {});
+      holder.releaseCurrentEvent();
+    });
+    holder.emitToListener('click', callback);
+
+    expect(callback).not.toBeCalled();
+  });
+
+  it('should release events of a certain type', function() {
+    var holder = new EventHolder();
+    var callbackClick = mocks.getMockFunction();
+    var callbackMouseover = mocks.getMockFunction();
+
+    holder.holdEvent('click', 'data');
+    holder.holdEvent('click', 'data');
+    holder.holdEvent('mouseover', 'datamouse');
+
+    holder.releaseEventType('click');
+
+    holder.emitToListener('click', callbackClick);
+    holder.emitToListener('mouseover', callbackMouseover);
+
+    expect(callbackClick).not.toBeCalled();
+    expect(callbackMouseover).toBeCalled();
+  });
+
 });
