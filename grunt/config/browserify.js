@@ -66,16 +66,6 @@ var min = grunt.util._.merge({}, basic, {
   after: [minify, bannerify]
 });
 
-var transformer = {
-  entries:[
-    './vendor/browser-transforms.js'
-  ],
-  outfile: './build/JSXTransformer.js',
-  debug: false,
-  standalone: 'JSXTransformer',
-  after: [simpleBannerify]
-};
-
 var test = {
   entries: [
     "./build/modules/test/all.js",
@@ -89,6 +79,5 @@ var test = {
 module.exports = {
   basic: basic,
   test: test,
-  min: min,
-  transformer: transformer
+  min: min
 };

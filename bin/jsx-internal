@@ -2,7 +2,7 @@
 // -*- mode: js -*-
 "use strict";
 
-var transform = require('../main').transform;
+var transform = require('react-tools').transform;
 var propagate = require("../vendor/constants").propagate;
 
 require("commoner").version(

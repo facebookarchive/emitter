@@ -45,7 +45,6 @@ module.exports = function(grunt) {
   grunt.registerMultiTask('phantom', phantomTask);
 
   grunt.registerTask('build:basic', ['jsx:debug', 'browserify:basic']);
-  grunt.registerTask('build:transformer', ['jsx:debug', 'browserify:transformer']);
   grunt.registerTask('build:min', ['jsx:release', 'browserify:min']);
   grunt.registerTask('build:test', [
     'jsx:debug',
@@ -60,7 +59,6 @@ module.exports = function(grunt) {
   grunt.registerTask('build', [
     'jsx:debug',
     'browserify:basic',
-    'browserify:transformer',
     'jsx:release',
     'browserify:min',
     'compare_size'
