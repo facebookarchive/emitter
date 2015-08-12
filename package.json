@@ -1,6 +1,6 @@
 {
   "name": "fbemitter",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "keywords": [
     "clientside"
   ],
@@ -12,63 +12,51 @@
     }
   ],
   "files": [
+    "LICENSE",
+    "PATENTS",
     "README.md",
-    "main.js",
-    "bin/jsx",
-    "build/React.js",
-    "vendor/fbtransform/",
-    "vendor/woodchipper.js"
+    "index.js",
+    "lib/",
+    "scripts/"
   ],
-  "main": "main.js",
-  "bin": {
-    "jsx": "./bin/jsx"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/facebook/emitter"
-  },
+  "main": "index.js",
+  "repository": "facebook/emitter",
   "scripts": {
-    "test": "jest"
+    "build": "gulp build",
+    "prepublish": "npm run build",
+    "test": "NODE_ENV=test jest"
   },
   "dependencies": {
-    "base62": "~0.1.1",
-    "commoner": "~0.8.4",
-    "esprima-fb": "1001.1001.1000-dev-harmony-fb",
-    "jstransform": "~1.0.0",
-    "recast": "~0.4.8"
+    "fbjs": "0.1.0-alpha.4"
   },
   "devDependencies": {
-    "browserify": "~2.14.2",
-    "grunt": "~0.4.1",
-    "grunt-compare-size": "~0.4.0",
-    "grunt-contrib-clean": "~0.4.1",
-    "grunt-contrib-compress": "~0.5.1",
-    "grunt-contrib-copy": "~0.4.1",
-    "grunt-contrib-jshint": "~0.5.4",
-    "gzip-js": "~0.3.2",
-    "jest-cli": "^0.3.0",
-    "optimist": "~0.4.0",
-    "phantomjs": ">= 1.9.0",
-    "react-tools": "^0.12.2",
-    "semver": ">= 1.1.4",
-    "source-map": "~0.1.22",
-    "uglify-js": "~2.3.6",
-    "wrapup": "~0.12.0"
+    "babel": "^5.4.7",
+    "del": "^1.2.0",
+    "gulp": "^3.8.11",
+    "gulp-babel": "^5.1.0",
+    "gulp-flatten": "0.0.4",
+    "jest-cli": "^0.4.5",
+    "object-assign": "^2.0.0",
+    "run-sequence": "^1.1.0"
   },
-  "preferGlobal": true,
   "jest": {
-    "rootDir": "",
-    "scriptPreprocessor": "jest/preprocessor.js",
-    "setupEnvScriptFile": "jest/environment.js",
-    "persistModuleRegistryBetweenSpecs": true,
     "modulePathIgnorePatterns": [
-      "/build/",
-      "/node_modules/",
-      "/.module-cache/"
-    ],
-    "testPathIgnorePatterns": [
-      "/build/",
+      "/lib/",
       "/node_modules/"
+    ],
+    "persistModuleRegistryBetweenSpecs": true,
+    "preprocessorIgnorePatterns": [
+      "/node_modules/"
+    ],
+    "rootDir": "",
+    "scriptPreprocessor": "scripts/jest/preprocessor.js",
+    "setupEnvScriptFile": "scripts/jest/environment.js",
+    "testPathDirs": [
+      "<rootDir>/src"
+    ],
+    "unmockedModulePathPatterns": [
+      "<rootDir>/node_modules/",
+      "<rootDir>/src/(?!(__forks__/fetch.js$|fetch/))"
     ]
   }
 }
