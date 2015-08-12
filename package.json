@@ -21,16 +21,16 @@
     "test": "NODE_ENV=test jest"
   },
   "dependencies": {
-    "fbjs": "0.1.0-alpha.4"
+    "fbjs": "0.1.0-alpha.7"
   },
   "devDependencies": {
     "babel": "^5.4.7",
     "del": "^1.2.0",
     "gulp": "^3.8.11",
     "gulp-babel": "^5.1.0",
-    "gulp-flatten": "0.0.4",
+    "gulp-flatten": "^0.1.1",
     "jest-cli": "^0.4.5",
-    "object-assign": "^2.0.0",
+    "object-assign": "^3.0.0",
     "run-sequence": "^1.1.0"
   },
   "jest": {
