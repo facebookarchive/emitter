@@ -5,19 +5,13 @@
     "clientside"
   ],
   "bugs": "https://github.com/facebook/emitter/issues",
-  "licenses": [
-    {
-      "type": "Apache-2.0",
-      "url": "http://www.apache.org/licenses/LICENSE-2.0"
-    }
-  ],
+  "license": "BSD-3-Clause",
   "files": [
     "LICENSE",
     "PATENTS",
     "README.md",
     "index.js",
-    "lib/",
-    "scripts/"
+    "lib/"
   ],
   "main": "index.js",
   "repository": "facebook/emitter",
