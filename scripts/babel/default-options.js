@@ -9,8 +9,8 @@
 
 'use strict';
 
-var babelPluginModules = require('fbjs/scripts/babel/rewrite-modules');
-var babelPluginDEV = require('fbjs/scripts/babel/dev-expression');
+var babelPluginModules = require('fbjs-scripts/babel/rewrite-modules');
+var babelPluginDEV = require('fbjs-scripts/babel/dev-expression');
 
 var moduleMap = require('fbjs/module-map');
 

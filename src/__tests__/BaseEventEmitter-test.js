@@ -181,10 +181,7 @@ describe('BaseEventEmitter', function() {
 
     expect(function() {
       emitter.removeCurrentListener();
-    }).toThrow(
-      'Invariant Violation: Not in an emitting cycle; there is no current ' +
-      'subscription'
-    );
+    }).toThrow('Not in an emitting cycle; there is no current subscription');
   });
 
   it('returns an array of listeners for an event', function() {
