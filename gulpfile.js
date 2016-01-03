@@ -15,8 +15,8 @@ var paths = {
   lib: 'lib'
 };
 
-gulp.task('clean', function(cb) {
-  del([paths.lib], cb);
+gulp.task('clean', function() {
+  return del([paths.lib]);
 });
 
 gulp.task('lib', function() {
