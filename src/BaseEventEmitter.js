@@ -7,14 +7,17 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @providesModule BaseEventEmitter
- * @typechecks
+ * @flow
  */
 
-var EmitterSubscription = require('EmitterSubscription');
-var EventSubscriptionVendor = require('EventSubscriptionVendor');
+const EmitterSubscription = require('EmitterSubscription');
+const ErrorUtils = require('ErrorUtils');
+const EventSubscriptionVendor = require('EventSubscriptionVendor');
 
-var emptyFunction = require('emptyFunction');
-var invariant = require('invariant');
+const emptyFunction = require('emptyFunction');
+const invariant = require('invariant');
+
+import type EventSubscription from 'EventSubscription';
 
 /**
  * @class BaseEventEmitter
@@ -29,11 +32,14 @@ var invariant = require('invariant');
  * mechanism on top of which extra functionality can be composed. For example, a
  * more advanced emitter may use an EventHolder and EventFactory.
  */
-class BaseEventEmitter {
+class BaseEventEmitter<TEvent: string> {
+  _currentSubscription: ?EmitterSubscription;
+  _subscriber: EventSubscriptionVendor;
+
   /**
    * @constructor
    */
-  constructor() {
+  constructor(): void {
     this._subscriber = new EventSubscriptionVendor();
     this._currentSubscription = null;
   }
@@ -53,7 +59,10 @@ class BaseEventEmitter {
    *   listener
    */
   addListener(
-    eventType: string, listener, context: ?Object): EmitterSubscription {
+    eventType: TEvent,
+    listener: Function,
+    context: ?Object,
+  ): EmitterSubscription {
     return this._subscriber.addSubscription(
       eventType,
       new EmitterSubscription(this._subscriber, listener, context));
@@ -69,7 +78,11 @@ class BaseEventEmitter {
    * @param {*} context - Optional context object to use when invoking the
    *   listener
    */
-  once(eventType: string, listener, context: ?Object): EmitterSubscription {
+  once(
+    eventType: TEvent,
+    listener: Function,
+    context: ?Object,
+  ): EmitterSubscription {
     var emitter = this;
     return this.addListener(eventType, function() {
       emitter.removeCurrentListener();
@@ -84,32 +97,21 @@ class BaseEventEmitter {
    * @param {?string} eventType - Optional name of the event whose registered
    *   listeners to remove
    */
-  removeAllListeners(eventType: ?String) {
+  removeAllListeners(eventType: ?TEvent): void {
     this._subscriber.removeAllSubscriptions(eventType);
   }
 
   /**
    * Provides an API that can be called during an eventing cycle to remove the
    * last listener that was invoked. This allows a developer to provide an event
-   * object that can remove the listener (or listener map) during the
-   * invocation.
+   * object that can remove the listener during the invocation.
    *
    * If it is called when not inside of an emitting cycle it will throw.
    *
    * @throws {Error} When called not during an eventing cycle
    *
-   * @example
-   *   var subscription = emitter.addListenerMap({
-   *     someEvent: function(data, event) {
-   *       console.log(data);
-   *       emitter.removeCurrentListener();
-   *     }
-   *   });
-   *
-   *   emitter.emit('someEvent', 'abc'); // logs 'abc'
-   *   emitter.emit('someEvent', 'def'); // does not log anything
    */
-  removeCurrentListener() {
+  removeCurrentListener(): void {
     invariant(
       !!this._currentSubscription,
       'Not in an emitting cycle; there is no current subscription'
@@ -124,7 +126,7 @@ class BaseEventEmitter {
    * @param {string} eventType - Name of the event to query
    * @return {array}
    */
-  listeners(eventType: string): Array /* TODO: Array<EventSubscription> */ {
+  listeners(eventType: ?TEvent): Array<EventSubscription> {
     var subscriptions = this._subscriber.getSubscriptionsForType(eventType);
     return subscriptions
       ? subscriptions.filter(emptyFunction.thatReturnsTrue).map(
@@ -148,20 +150,26 @@ class BaseEventEmitter {
    *
    *   emitter.emit('someEvent', 'abc'); // logs 'abc'
    */
-  emit(eventType) {
+  emit(eventType: TEvent): void {
     var subscriptions = this._subscriber.getSubscriptionsForType(eventType);
     if (subscriptions) {
       var keys = Object.keys(subscriptions);
+      var args;
       for (var ii = 0; ii < keys.length; ii++) {
         var key = keys[ii];
         var subscription = subscriptions[key];
         // The subscription may have been removed during this event loop.
         if (subscription) {
           this._currentSubscription = subscription;
-          this.__emitToSubscription.apply(
-            this,
-            [subscription].concat(Array.prototype.slice.call(arguments))
-          );
+          if (args == null) {
+            args = [subscription];
+            for (var i = 0, len = arguments.length; i < len; i++) {
+              args[i + 1] = arguments[i];
+            }
+          } else {
+            args[0] = subscription;
+          }
+          this.__emitToSubscription.apply(this, args);
         }
       }
       this._currentSubscription = null;
@@ -177,8 +185,13 @@ class BaseEventEmitter {
    * @param {string} eventType
    * @param {*} Arbitrary arguments to be passed to each registered listener
    */
-  __emitToSubscription(subscription, eventType) {
-    var args = Array.prototype.slice.call(arguments, 2);
+  __emitToSubscription(
+    subscription: EmitterSubscription,
+    eventType: TEvent,
+    ...args: Array<mixed>
+  ): void {
+    // Note: internally we use ErrorUtils.applyWithGuard
+    // We should add some version of that to fbjs but for now we won't guard.
     subscription.listener.apply(subscription.context, args);
   }
 }
