@@ -13,7 +13,7 @@
     "index.js",
     "lib/"
   ],
-  "main": "index.js",
+  "main": "lib/EventEmitter.js",
   "repository": "facebook/emitter",
   "scripts": {
     "build": "gulp build",
