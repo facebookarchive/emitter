@@ -16,7 +16,8 @@
   "main": "lib/EventEmitter.js",
   "repository": "facebook/emitter",
   "scripts": {
-    "build": "gulp build",
+    "build": "gulp build && npm run build-dot-flow",
+    "build-dot-flow": "find ./src -name '*.js' -not -path '*/__tests__*' | while read filepath; do cp $filepath `echo $filepath | sed 's/\\/src\\//\\/lib\\//g'`.flow; done",
     "prepublish": "npm run build",
     "test": "NODE_ENV=test jest"
   },
