@@ -5,13 +5,11 @@
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
- *
- * @emails oncall+uiecommd
  */
 
 'use strict';
 
-jest.disableAutomock();
+jest.autoMockOff();
 
 var BaseEventEmitter = require('BaseEventEmitter');
 
@@ -19,7 +17,7 @@ describe('BaseEventEmitter', function() {
   it('notifies listener when told to emit an event which that listener has ' +
      'registered for', function () {
     var emitter = new BaseEventEmitter();
-    var callback = jest.fn();
+    var callback = jest.genMockFunction();
 
     emitter.addListener('type1', callback);
 
@@ -31,7 +29,7 @@ describe('BaseEventEmitter', function() {
   it('allows for the passing of the context when handling events', function() {
     var emitter = new BaseEventEmitter();
     var calledContext;
-    var callback = jest.fn();
+    var callback = jest.genMockFunction();
     callback.mockImplementation(function() {
       calledContext = this;
     });
@@ -48,8 +46,8 @@ describe('BaseEventEmitter', function() {
   it('notifies multiple listeners when told to emit an event which multiple ' +
      'listeners are registered for', function () {
     var emitter = new BaseEventEmitter();
-    var callback1 = jest.fn();
-    var callback2 = jest.fn();
+    var callback1 = jest.genMockFunction();
+    var callback2 = jest.genMockFunction();
 
     emitter.addListener('type1', callback1);
     emitter.addListener('type1', callback2);
@@ -62,7 +60,7 @@ describe('BaseEventEmitter', function() {
 
   it('does not notify events of different types', function() {
     var emitter = new BaseEventEmitter();
-    var callback = jest.fn();
+    var callback = jest.genMockFunction();
 
     emitter.addListener('type1', callback);
 
@@ -73,7 +71,7 @@ describe('BaseEventEmitter', function() {
 
   it('does not notify of events after all listeners are removed', function() {
     var emitter = new BaseEventEmitter();
-    var callback = jest.fn();
+    var callback = jest.genMockFunction();
 
     emitter.addListener('type1', callback);
     emitter.removeAllListeners();
@@ -85,7 +83,7 @@ describe('BaseEventEmitter', function() {
 
   it('does not notify the listener of events after it is removed', function() {
     var emitter = new BaseEventEmitter();
-    var callback = jest.fn();
+    var callback = jest.genMockFunction();
 
     var subscription = emitter.addListener('type1', callback);
     subscription.remove();
@@ -98,8 +96,8 @@ describe('BaseEventEmitter', function() {
   it('invokes only the listeners registered at the time the event was ' +
      'emitted, even if more were added', function() {
     var emitter = new BaseEventEmitter();
-    var callback1 = jest.fn();
-    var callback2 = jest.fn();
+    var callback1 = jest.genMockFunction();
+    var callback2 = jest.genMockFunction();
 
     callback1.mockImplementation(function() {
       emitter.addListener('type1', callback2);
@@ -116,8 +114,8 @@ describe('BaseEventEmitter', function() {
   it('does not invoke listeners registered at the time the event was ' +
      'emitted but later removed during the event loop', function() {
     var emitter = new BaseEventEmitter();
-    var callback1 = jest.fn();
-    var callback2 = jest.fn();
+    var callback1 = jest.genMockFunction();
+    var callback2 = jest.genMockFunction();
 
     callback1.mockImplementation(function() {
       subscription.remove();
@@ -135,7 +133,7 @@ describe('BaseEventEmitter', function() {
   it('does notify other handlers of events after a particular listener has ' +
      'been removed', function() {
     var emitter = new BaseEventEmitter();
-    var callback = jest.fn();
+    var callback = jest.genMockFunction();
 
     var subscription = emitter.addListener('type1', function() {});
     emitter.addListener('type1', callback);
@@ -149,7 +147,7 @@ describe('BaseEventEmitter', function() {
   it('provides a way to remove the current listener when told to do so in ' +
      'the midst of an emitting cycle', function() {
     var emitter = new BaseEventEmitter();
-    var callback = jest.fn();
+    var callback = jest.genMockFunction();
 
     emitter.addListener('type1', callback);
 
@@ -166,7 +164,7 @@ describe('BaseEventEmitter', function() {
 
   it('provides a way to register a listener that is invoked once', function() {
     var emitter = new BaseEventEmitter();
-    var callback = jest.fn();
+    var callback = jest.genMockFunction();
 
     emitter.once('type1', callback);
 
@@ -183,9 +181,7 @@ describe('BaseEventEmitter', function() {
 
     expect(function() {
       emitter.removeCurrentListener();
-    }).toThrowError(
-      'Not in an emitting cycle; there is no current subscription'
-    );
+    }).toThrow('Not in an emitting cycle; there is no current subscription');
   });
 
   it('returns an array of listeners for an event', function() {

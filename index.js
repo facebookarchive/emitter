@@ -5,14 +5,11 @@
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
- *
- * @providesModule EventEmitter
- * @flow
  */
 
-const BaseEventEmitter = require('BaseEventEmitter');
+var fbemitter = {
+  EventEmitter: require('./lib/BaseEventEmitter'),
+  EmitterSubscription : require('./lib/EmitterSubscription')
+};
 
-class EventEmitter<TEvent: string> extends BaseEventEmitter<TEvent> {
-}
-
-module.exports = EventEmitter;
+module.exports = fbemitter;

@@ -5,23 +5,19 @@
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
- *
+ * 
  * @providesModule EmitterSubscription
- * @flow
+ * @typechecks
  */
 
 'use strict';
 
-const EventSubscription = require('EventSubscription');
-
-import type EventSubscriptionVendor from 'EventSubscriptionVendor';
+var EventSubscription = require('EventSubscription');
 
 /**
  * EmitterSubscription represents a subscription with listener and context data.
  */
 class EmitterSubscription extends EventSubscription {
-  context: ?Object;
-  listener: Function;
 
   /**
    * @param {EventSubscriptionVendor} subscriber - The subscriber that controls
@@ -31,11 +27,7 @@ class EmitterSubscription extends EventSubscription {
    * @param {*} context - Optional context object to use when invoking the
    *   listener
    */
-  constructor(
-    subscriber: EventSubscriptionVendor,
-    listener: Function,
-    context: ?Object,
-  ): void {
+  constructor(subscriber: EventSubscriptionVendor, listener, context: ?Object) {
     super(subscriber);
     this.listener = listener;
     this.context = context;

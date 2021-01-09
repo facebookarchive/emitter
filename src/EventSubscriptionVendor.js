@@ -5,15 +5,14 @@
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
- *
+ * 
  * @providesModule EventSubscriptionVendor
  * @typechecks
- * @noflow
  */
 
 'use strict';
 
-const invariant = require('invariant');
+var invariant = require('invariant');
 
 /**
  * EventSubscriptionVendor stores a set of EventSubscriptions that are
@@ -23,6 +22,7 @@ class EventSubscriptionVendor {
 
   constructor() {
     this._subscriptionsForType = {};
+    this._currentSubscription = null;
   }
 
   /**
@@ -39,7 +39,7 @@ class EventSubscriptionVendor {
     if (!this._subscriptionsForType[eventType]) {
       this._subscriptionsForType[eventType] = [];
     }
-    const key = this._subscriptionsForType[eventType].length;
+    var key = this._subscriptionsForType[eventType].length;
     this._subscriptionsForType[eventType].push(subscription);
     subscription.eventType = eventType;
     subscription.key = key;
@@ -67,10 +67,10 @@ class EventSubscriptionVendor {
    * @param {object} subscription
    */
   removeSubscription(subscription: Object) {
-    const eventType = subscription.eventType;
-    const key = subscription.key;
+    var eventType = subscription.eventType;
+    var key = subscription.key;
 
-    const subscriptionsForType = this._subscriptionsForType[eventType];
+    var subscriptionsForType = this._subscriptionsForType[eventType];
     if (subscriptionsForType) {
       delete subscriptionsForType[key];
     }
