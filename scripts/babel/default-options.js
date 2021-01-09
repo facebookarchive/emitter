@@ -9,22 +9,21 @@
 
 'use strict';
 
-var babelPluginModules = require('fbjs-scripts/babel/rewrite-modules');
-var babelPluginDEV = require('fbjs-scripts/babel/dev-expression');
-
-var moduleMap = require('fbjs/module-map');
-
-var babelOpts = {
-  nonStandard: true,
-  blacklist: [
-    'spec.functionName'
+module.exports = {
+  presets: [
+    require('babel-preset-fbjs/configure')({
+      rewriteModules: {
+        map: {
+          emptyFunction: 'fbjs/lib/emptyFunction',
+          invariant: 'fbjs/lib/invariant',
+          // Hack to workaround Jest no longer understanding Haste.
+          BaseEventEmitter: './BaseEventEmitter.js',
+          EmitterSubscription: './EmitterSubscription.js',
+          EventSubscription: './EventSubscription.js',
+          EventSubscriptionVendor: './EventSubscriptionVendor.js',
+        },
+      },
+      stripDEV: true,
+    }),
   ],
-  loose: [
-    'es6.classes'
-  ],
-  stage: 1,
-  plugins: [babelPluginDEV, babelPluginModules],
-  _moduleMap: moduleMap,
 };
-
-module.exports = babelOpts;

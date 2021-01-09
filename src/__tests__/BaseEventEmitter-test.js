@@ -9,9 +9,7 @@
 
 'use strict';
 
-jest.autoMockOff();
-
-var BaseEventEmitter = require('../BaseEventEmitter');
+const BaseEventEmitter = require('../BaseEventEmitter');
 
 describe('BaseEventEmitter', function () {
   it(
@@ -19,7 +17,7 @@ describe('BaseEventEmitter', function () {
       'registered for',
     function () {
       var emitter = new BaseEventEmitter();
-      var callback = jest.genMockFunction();
+      var callback = jest.fn();
 
       emitter.addListener('type1', callback);
 
@@ -32,7 +30,7 @@ describe('BaseEventEmitter', function () {
   it('allows for the passing of the context when handling events', function () {
     var emitter = new BaseEventEmitter();
     var calledContext;
-    var callback = jest.genMockFunction();
+    var callback = jest.fn();
     callback.mockImplementation(function () {
       calledContext = this;
     });
@@ -51,8 +49,8 @@ describe('BaseEventEmitter', function () {
       'listeners are registered for',
     function () {
       var emitter = new BaseEventEmitter();
-      var callback1 = jest.genMockFunction();
-      var callback2 = jest.genMockFunction();
+      var callback1 = jest.fn();
+      var callback2 = jest.fn();
 
       emitter.addListener('type1', callback1);
       emitter.addListener('type1', callback2);
@@ -66,7 +64,7 @@ describe('BaseEventEmitter', function () {
 
   it('does not notify events of different types', function () {
     var emitter = new BaseEventEmitter();
-    var callback = jest.genMockFunction();
+    var callback = jest.fn();
 
     emitter.addListener('type1', callback);
 
@@ -77,7 +75,7 @@ describe('BaseEventEmitter', function () {
 
   it('does not notify of events after all listeners are removed', function () {
     var emitter = new BaseEventEmitter();
-    var callback = jest.genMockFunction();
+    var callback = jest.fn();
 
     emitter.addListener('type1', callback);
     emitter.removeAllListeners();
@@ -89,7 +87,7 @@ describe('BaseEventEmitter', function () {
 
   it('does not notify the listener of events after it is removed', function () {
     var emitter = new BaseEventEmitter();
-    var callback = jest.genMockFunction();
+    var callback = jest.fn();
 
     var subscription = emitter.addListener('type1', callback);
     subscription.remove();
@@ -104,8 +102,8 @@ describe('BaseEventEmitter', function () {
       'emitted, even if more were added',
     function () {
       var emitter = new BaseEventEmitter();
-      var callback1 = jest.genMockFunction();
-      var callback2 = jest.genMockFunction();
+      var callback1 = jest.fn();
+      var callback2 = jest.fn();
 
       callback1.mockImplementation(function () {
         emitter.addListener('type1', callback2);
@@ -125,8 +123,8 @@ describe('BaseEventEmitter', function () {
       'emitted but later removed during the event loop',
     function () {
       var emitter = new BaseEventEmitter();
-      var callback1 = jest.genMockFunction();
-      var callback2 = jest.genMockFunction();
+      var callback1 = jest.fn();
+      var callback2 = jest.fn();
 
       callback1.mockImplementation(function () {
         subscription.remove();
@@ -147,7 +145,7 @@ describe('BaseEventEmitter', function () {
       'been removed',
     function () {
       var emitter = new BaseEventEmitter();
-      var callback = jest.genMockFunction();
+      var callback = jest.fn();
 
       var subscription = emitter.addListener('type1', function () {});
       emitter.addListener('type1', callback);
@@ -164,7 +162,7 @@ describe('BaseEventEmitter', function () {
       'the midst of an emitting cycle',
     function () {
       var emitter = new BaseEventEmitter();
-      var callback = jest.genMockFunction();
+      var callback = jest.fn();
 
       emitter.addListener('type1', callback);
 
@@ -182,7 +180,7 @@ describe('BaseEventEmitter', function () {
 
   it('provides a way to register a listener that is invoked once', function () {
     var emitter = new BaseEventEmitter();
-    var callback = jest.genMockFunction();
+    var callback = jest.fn();
 
     emitter.once('type1', callback);
 

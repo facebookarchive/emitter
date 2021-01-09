@@ -24,13 +24,13 @@
     "fbjs": "^3.0.0"
   },
   "devDependencies": {
-    "babel-core": "^5.8.34",
+    "@babel/core": "^7.0.0",
     "del": "^2.2.0",
-    "fbjs-scripts": "^0.5.0",
-    "gulp": "^3.9.0",
-    "gulp-babel": "^5.3.0",
+    "fbjs-scripts": "^3.0.0",
+    "gulp": "^4.0.2",
+    "gulp-babel": "^8.0.0",
     "gulp-flatten": "^0.2.0",
-    "jest-cli": "^0.8.2",
+    "jest-cli": "^26.6.3",
     "object-assign": "^4.0.1",
     "run-sequence": "^1.1.5"
   },
@@ -39,13 +39,14 @@
       "/lib/",
       "/node_modules/"
     ],
-    "persistModuleRegistryBetweenSpecs": true,
-    "preprocessorIgnorePatterns": [
+    "transformIgnorePatterns": [
       "/node_modules/"
     ],
+    "transform": {
+      "\\.js$": "<rootDir>/scripts/jest/preprocessor.js"
+    },
     "rootDir": "",
-    "scriptPreprocessor": "scripts/jest/preprocessor.js",
-    "testPathDirs": [
+    "roots": [
       "<rootDir>/src"
     ],
     "unmockedModulePathPatterns": [

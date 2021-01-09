@@ -9,10 +9,8 @@
 
 'use strict';
 
-jest.autoMockOff();
-
-var EventSubscriptionVendor = require('../EventSubscriptionVendor');
-var EventSubscription = require('../EventSubscription');
+const EventSubscriptionVendor = require('../EventSubscriptionVendor');
+const EventSubscription = require('../EventSubscription');
 
 describe('EventSubscriptionVendor', function () {
   it('adds subscriptions', function () {

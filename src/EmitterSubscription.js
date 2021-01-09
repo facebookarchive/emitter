@@ -5,20 +5,19 @@
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
- * 
+ *
  * @providesModule EmitterSubscription
  * @typechecks
  */
 
 'use strict';
 
-var EventSubscription = require('EventSubscription');
+const EventSubscription = require('EventSubscription');
 
 /**
  * EmitterSubscription represents a subscription with listener and context data.
  */
 class EmitterSubscription extends EventSubscription {
-
   /**
    * @param {EventSubscriptionVendor} subscriber - The subscriber that controls
    *   this subscription

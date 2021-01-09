@@ -1,34 +1,34 @@
-var babel = require('gulp-babel');
-var del = require('del');
-var flatten = require('gulp-flatten');
-var gulp = require('gulp');
-var runSequence = require('run-sequence');
+const babel = require('gulp-babel');
+const del = require('del');
+const flatten = require('gulp-flatten');
+const { dest, series, src } = require('gulp');
+const runSequence = require('run-sequence');
 
-var babelOpts = require('./scripts/babel/default-options');
+const babelOpts = require('./scripts/babel/default-options');
 
-var paths = {
+const paths = {
   src: [
     'src/**/*.js',
     '!src/**/__tests__/**/*.js',
-    '!src/**/__mocks__/**/*.js'
+    '!src/**/__mocks__/**/*.js',
   ],
-  lib: 'lib'
+  lib: 'lib',
 };
 
-gulp.task('clean', function() {
+function clean() {
   return del([paths.lib]);
-});
+}
 
-gulp.task('lib', function() {
-  return gulp
-    .src(paths.src)
+function lib() {
+  return src(paths.src)
     .pipe(babel(babelOpts))
     .pipe(flatten())
-    .pipe(gulp.dest(paths.lib));
-});
+    .pipe(dest(paths.lib));
+}
 
-gulp.task('build', function(cb) {
-  runSequence('clean', ['lib'], cb);
-});
+const build = series(clean, lib);
 
-gulp.task('default', ['build']);
+exports.clean = clean;
+exports.lib = lib;
+exports.build = build;
+exports.default = build;

@@ -5,21 +5,20 @@
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
- * 
+ *
  * @providesModule EventSubscriptionVendor
  * @typechecks
  */
 
 'use strict';
 
-var invariant = require('invariant');
+const invariant = require('invariant');
 
 /**
  * EventSubscriptionVendor stores a set of EventSubscriptions that are
  * subscribed to a particular event type.
  */
 class EventSubscriptionVendor {
-
   constructor() {
     this._subscriptionsForType = {};
     this._currentSubscription = null;
@@ -32,10 +31,13 @@ class EventSubscriptionVendor {
    * @param {EventSubscription} subscription
    */
   addSubscription(
-    eventType: String, subscription: EventSubscription): EventSubscription {
+    eventType: String,
+    subscription: EventSubscription,
+  ): EventSubscription {
     invariant(
       subscription.subscriber === this,
-      'The subscriber of the subscription is incorrectly set.');
+      'The subscriber of the subscription is incorrectly set.',
+    );
     if (!this._subscriptionsForType[eventType]) {
       this._subscriptionsForType[eventType] = [];
     }
@@ -89,7 +91,7 @@ class EventSubscriptionVendor {
    * @return {?array}
    */
   getSubscriptionsForType(eventType: String): ?Array {
-   return this._subscriptionsForType[eventType];
+    return this._subscriptionsForType[eventType];
   }
 }
 

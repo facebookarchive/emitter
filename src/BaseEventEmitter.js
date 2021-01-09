@@ -10,11 +10,11 @@
  * @typechecks
  */
 
-var EmitterSubscription = require('EmitterSubscription');
-var EventSubscriptionVendor = require('EventSubscriptionVendor');
+const EmitterSubscription = require('EmitterSubscription');
+const EventSubscriptionVendor = require('EventSubscriptionVendor');
 
-var emptyFunction = require('emptyFunction');
-var invariant = require('invariant');
+const invariant = require('invariant');
+const emptyFunction = require('emptyFunction');
 
 /**
  * @class BaseEventEmitter
@@ -53,10 +53,14 @@ class BaseEventEmitter {
    *   listener
    */
   addListener(
-    eventType: string, listener, context: ?Object): EmitterSubscription {
+    eventType: string,
+    listener,
+    context: ?Object,
+  ): EmitterSubscription {
     return this._subscriber.addSubscription(
       eventType,
-      new EmitterSubscription(this._subscriber, listener, context));
+      new EmitterSubscription(this._subscriber, listener, context),
+    );
   }
 
   /**
@@ -71,7 +75,7 @@ class BaseEventEmitter {
    */
   once(eventType: string, listener, context: ?Object): EmitterSubscription {
     var emitter = this;
-    return this.addListener(eventType, function() {
+    return this.addListener(eventType, function () {
       emitter.removeCurrentListener();
       listener.apply(context, arguments);
     });
@@ -84,7 +88,7 @@ class BaseEventEmitter {
    * @param {?string} eventType - Optional name of the event whose registered
    *   listeners to remove
    */
-  removeAllListeners(eventType: ?String) {
+  removeAllListeners(eventType: ?string) {
     this._subscriber.removeAllSubscriptions(eventType);
   }
 
@@ -112,7 +116,7 @@ class BaseEventEmitter {
   removeCurrentListener() {
     invariant(
       !!this._currentSubscription,
-      'Not in an emitting cycle; there is no current subscription'
+      'Not in an emitting cycle; there is no current subscription',
     );
     this._subscriber.removeSubscription(this._currentSubscription);
   }
@@ -127,8 +131,9 @@ class BaseEventEmitter {
   listeners(eventType: string): Array /* TODO: Array<EventSubscription> */ {
     var subscriptions = this._subscriber.getSubscriptionsForType(eventType);
     return subscriptions
-      ? subscriptions.filter(emptyFunction.thatReturnsTrue).map(
-          function(subscription) {
+      ? subscriptions
+          .filter(emptyFunction.thatReturnsTrue)
+          .map(function (subscription) {
             return subscription.listener;
           })
       : [];
@@ -160,7 +165,7 @@ class BaseEventEmitter {
           this._currentSubscription = subscription;
           this.__emitToSubscription.apply(
             this,
-            [subscription].concat(Array.prototype.slice.call(arguments))
+            [subscription].concat(Array.prototype.slice.call(arguments)),
           );
         }
       }
