@@ -11,26 +11,25 @@
 
 jest.autoMockOff();
 
-var EventSubscriptionVendor = require('EventSubscriptionVendor');
-var EventSubscription = require('EventSubscription');
+var EventSubscriptionVendor = require('../EventSubscriptionVendor');
+var EventSubscription = require('../EventSubscription');
 
-describe('EventSubscriptionVendor', function() {
-
-  it('adds subscriptions', function() {
+describe('EventSubscriptionVendor', function () {
+  it('adds subscriptions', function () {
     var subscriber = new EventSubscriptionVendor();
     expect(subscriber.getSubscriptionsForType('type1')).toBe(undefined);
     subscriber.addSubscription('type1', new EventSubscription(subscriber));
     expect(subscriber.getSubscriptionsForType('type1').length).toBe(1);
   });
 
-  it('adds subscriptions keyed on type', function() {
+  it('adds subscriptions keyed on type', function () {
     var subscriber = new EventSubscriptionVendor();
     subscriber.addSubscription('type1', new EventSubscription(subscriber));
     subscriber.addSubscription('type2', new EventSubscription(subscriber));
     expect(subscriber.getSubscriptionsForType('type1').length).toBe(1);
   });
 
-  it('removes a subscription', function() {
+  it('removes a subscription', function () {
     var subscriber = new EventSubscriptionVendor();
     var subscription1 = new EventSubscription(subscriber);
     subscription1.is1 = true;
@@ -51,13 +50,12 @@ describe('EventSubscriptionVendor', function() {
     expect(allempty).toBeFalsy();
   });
 
-  it('removes all subscriptions of a certain type', function() {
+  it('removes all subscriptions of a certain type', function () {
     var subscriber = new EventSubscriptionVendor();
     subscriber.addSubscription('type1', new EventSubscription(subscriber));
     subscriber.addSubscription('type1', new EventSubscription(subscriber));
     expect(subscriber.getSubscriptionsForType('type1').length).toBe(2);
     subscriber.removeAllSubscriptions('type1');
-    expect(subscriber.getSubscriptionsForType('type1'))
-      .toBe(undefined);
+    expect(subscriber.getSubscriptionsForType('type1')).toBe(undefined);
   });
 });
